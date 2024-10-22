@@ -27,7 +27,7 @@
 #include <assert.h>
 
 /* Read MAX_CHAR_BUFFER_SIZE size lines from the "fileName" and populate it in
- * the fileContents vector. Each line should be terminated with a '\n'
+ * the fileContents vector. Each line should be terminated with the value of inFileLineSep
  */
 FileContents::FileContents(const char *fileName)
 {
@@ -48,7 +48,7 @@ FileContents::FileContents(const char *fileName)
 
 
     std::string lineStr;
-    std::getline(inFile, lineStr);
+    std::getline(inFile, lineStr, inFileLineSep);
     if (!lineStr.empty() && *lineStr.rbegin() == '\r') {
         lineStr.pop_back();
     }
@@ -75,7 +75,7 @@ FileContents::FileContents(const char *fileName)
         useprintf++;
         char *endptr;
         virtualLines = strtoul(useprintf, &endptr, 0);
-        if (*endptr && *endptr != '\r' && *endptr != '\n' && *endptr != ',') {
+        if (*endptr && *endptr != '\r' && *endptr != inFileLineSep && *endptr != ',') {
             ERROR("Invalid file printf specification for (invalid end character '%c') %s:%s", *endptr, fileName, line);
         }
         if (virtualLines == 0) {
@@ -92,7 +92,7 @@ FileContents::FileContents(const char *fileName)
         useprintf++;
         char *endptr;
         printfOffset = strtoul(useprintf, &endptr, 0);
-        if (*endptr && *endptr != '\n' && *endptr != ',') {
+        if (*endptr && *endptr != inFileLineSep && *endptr != ',') {
             ERROR("Invalid PRINTFOFFSET specification for (invalid end character '%c') %s:%s", *endptr, fileName, line);
         }
     }
@@ -105,14 +105,14 @@ FileContents::FileContents(const char *fileName)
         useprintf++;
         char *endptr;
         printfMultiple = strtoul(useprintf, &endptr, 0);
-        if (*endptr && *endptr != '\n' && *endptr != ',') {
+        if (*endptr && *endptr != inFileLineSep && *endptr != ',') {
             ERROR("Invalid PRINTFOFFSET specification for (invalid end character '%c') %s:%s", *endptr, fileName, line);
         }
     }
 
     while (!inFile.eof()) {
         lineStr.clear();
-        std::getline(inFile, lineStr);
+        std::getline(inFile, lineStr, inFileLineSep);
         if (!lineStr.empty()) {
             if ('#' != lineStr[0]) {
                 if(*lineStr.rbegin() == '\r') {

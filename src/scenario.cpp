@@ -54,6 +54,7 @@ message::message(int index, const char *desc)
     timeout = 0;
 
     recv_response = 0;
+	recv_response_str = NULL; // free on exit
     recv_request = nullptr; // free on exit
     optional = 0;
     advance_state = true;
@@ -115,7 +116,7 @@ message::~message()
     delete(pause_distribution);
     free(pause_desc);
     delete(send_scheme);
-    free(recv_request);
+	free(recv_response_str);
     if (regexp_compile != nullptr) {
         regfree(regexp_compile);
     }
@@ -885,13 +886,25 @@ scenario::scenario(char * filename, int deflt)
                     ERROR("response_txn can only be used for received messages.");
                 }
 
-                curmsg -> retrans_delay = xp_get_long("retrans", "retransmission timer", 0);
-                curmsg -> timeout = xp_get_long("timeout", "message send timeout", 0);
+                curmsg->retrans_delay = xp_get_long("retrans", "retransmission timer", 0);
+                curmsg->timeout = xp_get_long("timeout", "message send timeout", 0);
             } else if (!strcmp(elem, "recv")) {
                 curmsg->M_type = MSG_TYPE_RECV;
                 /* Received messages descriptions */
+
+                if ((cptr = xp_get_value("regexp_match"))) {
+                    if (!strcmp(cptr, "true")) {
+                        curmsg->regexp_match = 1;
+                    }
+                }
+
                 if((cptr = xp_get_value("response"))) {
-                    curmsg ->recv_response = get_long(cptr, "response code");
+                    if (curmsg->regexp_match) {
+                        curmsg->recv_response_str = strdup(cptr);
+                        curmsg->recv_response = 0;
+                    } else {
+                        curmsg->recv_response = get_long(cptr, "response code");
+                    }
                     if (method_list) {
                         curmsg->recv_response_for_cseq_method_list = strdup(method_list);
                     }
@@ -912,12 +925,6 @@ scenario::scenario(char * filename, int deflt)
                 curmsg->advance_state = xp_get_bool("advance_state", "recv", true);
                 if (!curmsg->advance_state && curmsg->optional == OPTIONAL_FALSE) {
                     ERROR("advance_state is allowed only for optional messages (index = %zu)", messages.size() - 1);
-                }
-
-                if ((cptr = xp_get_value("regexp_match"))) {
-                    if (!strcmp(cptr, "true")) {
-                        curmsg->regexp_match = 1;
-                    }
                 }
 
                 curmsg->timeout = xp_get_long("timeout", "message timeout", 0);
@@ -1646,7 +1653,9 @@ void scenario::parseAction(CActions *actions)
                     type = CAction::E_INTCMD_STOP_ALL;
                 } else if (strcmp(cptr, "stop_call") == 0) {
                     type = CAction::E_INTCMD_STOPCALL;
-                }
+                } else if (strcmp(cptr, "next_call") == 0) {
+					type = CAction::E_INTCMD_NEXTCALL;
+				}
 
                 /* the action is well formed, adding it in the */
                 /* tmpActionTable */

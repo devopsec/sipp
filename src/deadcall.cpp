@@ -49,7 +49,8 @@
 /* Defined in call.cpp. */
 extern timewheel paused_calls;
 
-deadcall::deadcall(const char *id, const char *reason) : listener(id, true)
+deadcall::deadcall(const char *id, const char *reason) :
+listener(id, true, 0 /* no user */, true /* do not change input file line num*/)
 {
     this->expiration = clock_tick + deadcall_wait;
     this->reason = strdup(reason);

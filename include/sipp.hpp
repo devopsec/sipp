@@ -335,6 +335,7 @@ MAYBE_EXTERN file_map inFiles;
 typedef std::map<std::string, str_int_map *> file_index;
 MAYBE_EXTERN char *ip_file DEFVAL(nullptr);
 MAYBE_EXTERN char *default_file DEFVAL(nullptr);
+MAYBE_EXTERN char inFileLineSep DEFVAL('\n');
 
 // free user id list
 MAYBE_EXTERN std::list<int> freeUsers;

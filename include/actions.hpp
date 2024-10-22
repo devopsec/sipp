@@ -116,7 +116,8 @@ public:
         E_INTCMD_INVALID = 0,
         E_INTCMD_STOPCALL,
         E_INTCMD_STOP_ALL,
-        E_INTCMD_STOP_NOW
+        E_INTCMD_STOP_NOW,
+		E_INTCMD_NEXTCALL
     };
 
     typedef struct _T_Action {

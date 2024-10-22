@@ -29,24 +29,37 @@
 
 #include "sipp.hpp"
 
+
+typedef std::map <std::string, int> file_line_map;
+
+extern unsigned int next_number;
+extern const int SM_UNUSED;
+
 class listener
 {
 public:
-    listener(const char *id, bool listening);
+    listener(const char *id, bool listening, int userId, bool isAutomatic);
     virtual ~listener();
     char *getId();
-    virtual bool process_incoming(const char* msg, const struct sockaddr_storage* src) = 0;
-    virtual bool process_twinSippCom(char* msg) = 0;
+	virtual bool process_incoming(const char* msg, const struct sockaddr_storage* src) = 0;
+	virtual bool process_twinSippCom(char* msg) = 0;
+	virtual char* createSendingMessage(SendingMessage*src, int P_index, char *msg_buffer, int buflen) = 0;
+	void getFieldFromInputFile(const char* fileName, int field, SendingMessage *line, char*& dest);
+	void startListening();
+	void stopListening();
 
 protected:
-    void startListening();
-    void stopListening();
+	char *build_call_id();
 
+	file_line_map *m_lineNumber;
+	int  userId;
     char *id;
     bool listening;
 };
 
 typedef std::map<std::string, listener *> listener_map;
 listener * get_listener(const char *);
+
+extern listener_map listeners;
 
 #endif

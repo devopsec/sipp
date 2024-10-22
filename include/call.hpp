@@ -54,6 +54,9 @@
 #define RTCHECK_LOOSE   2
 
 
+extern unsigned int next_number;
+extern const int SM_UNUSED;
+
 struct txnInstanceInfo {
     char *txnID;
     unsigned long txnResp;
@@ -72,6 +75,22 @@ typedef enum
     eNumSessionStates
 } SessionState;
 
+/* result of execute action */
+typedef enum
+{
+	E_AR_NO_ERROR = 0,
+	E_AR_REGEXP_DOESNT_MATCH,
+	E_AR_REGEXP_SHOULDNT_MATCH,
+	E_AR_STOP_CALL,
+	E_AR_CONNECT_FAILED,
+	E_AR_HDR_NOT_FOUND,
+	E_AR_TEST_DOESNT_MATCH,
+	E_AR_TEST_SHOULDNT_MATCH,
+	E_AR_STRCMP_DOESNT_MATCH,
+	E_AR_STRCMP_SHOULDNT_MATCH,
+	E_AR_RTPECHO_ERROR
+} T_ActionResult;
+
 class call : virtual public task, virtual public listener, public virtual socketowner
 {
 public:
@@ -84,8 +103,8 @@ public:
 
     virtual ~call();
 
-    virtual bool process_incoming(const char* msg, const struct sockaddr_storage* src = nullptr);
-    virtual bool process_twinSippCom(char* msg);
+    bool process_incoming(const char* msg, const struct sockaddr_storage* src = nullptr);
+    bool process_twinSippCom(char* msg);
 
     virtual bool run();
     /* Terminate this call, depending on action results and timewait. */
@@ -94,7 +113,7 @@ public:
 
     /* When should this call wake up? */
     virtual unsigned int wake();
-    virtual bool  abortCall(bool writeLog); // call aborted with BYE or CANCEL
+    virtual bool abortCall(bool writeLog); // call aborted with BYE or CANCEL
     virtual void abort();
 
     /* Dump call info to error log. */
@@ -111,7 +130,7 @@ public:
     };
 
     void setLastMsg(const char *msg);
-    bool  automaticResponseMode(T_AutoMode P_case, const char* P_recv);
+    bool automaticResponseMode(T_AutoMode P_case, const char* P_recv);
     const char *getLastReceived() {
         return last_recv_msg;
     };
@@ -135,9 +154,8 @@ public:
     static   int   startDynamicId;  // offset for first dynamicId  FIXME:in CmdLine
     static   int   stepDynamicId;   // step of increment for dynamicId
     static   int   dynamicId;       // a counter for general use, incrementing  by  stepDynamicId starting at startDynamicId  wrapping at maxDynamicId  GLOBALY
+
 protected:
-
-
     unsigned int   tdm_map_number;
 
     int            msg_index;
@@ -241,21 +259,6 @@ protected:
     /* Our transaction IDs. */
     struct txnInstanceInfo *transactions;
 
-    /* result of execute action */
-    enum T_ActionResult {
-        E_AR_NO_ERROR = 0,
-        E_AR_REGEXP_DOESNT_MATCH,
-        E_AR_REGEXP_SHOULDNT_MATCH,
-        E_AR_STOP_CALL,
-        E_AR_CONNECT_FAILED,
-        E_AR_HDR_NOT_FOUND,
-        E_AR_TEST_DOESNT_MATCH,
-        E_AR_TEST_SHOULDNT_MATCH,
-        E_AR_STRCMP_DOESNT_MATCH,
-        E_AR_STRCMP_SHOULDNT_MATCH,
-        E_AR_RTPECHO_ERROR
-    };
-
     /* Store the last action result to allow  */
     /* call to continue and mark it as failed */
     T_ActionResult last_action_result;
@@ -273,9 +276,10 @@ protected:
     double get_rhs(CAction *currentAction);
 
     // P_index use for message index in scenario
-    char* createSendingMessage(SendingMessage* src, int P_index=-1, int *msgLen=nullptr);
+    char* createSendingMessage(SendingMessage* src, int P_index=-1, int* msgLen=nullptr);
     char* createSendingMessage(char* src, int P_index, bool skip_sanity=false);
-    char* createSendingMessage(SendingMessage*src, int P_index, char *msg_buffer, int buflen, int *msgLen=nullptr);
+	char* createSendingMessage(SendingMessage* src, int P_index, char* msg_buffer, int buflen);
+    char* createSendingMessage(SendingMessage* src, int P_index, char* msg_buffer, int buflen, int* msgLen);
 
     // method for the management of unexpected messages
     bool  checkInternalCmd(char* cmd);  // check of specific internal command
@@ -299,8 +303,6 @@ protected:
     static void readInputFileContents(const char* fileName);
     static void dumpFileContents(void);
 
-    void getFieldFromInputFile(const char* fileName, int field, SendingMessage *line, char*& dest);
-
     /* Associate a user with this call. */
     void setUser(int userId);
 
@@ -323,10 +325,6 @@ protected:
     char * get_last_header(const char * name);
     char * get_last_request_uri();
     unsigned long hash(const char * msg);
-
-    typedef std::map <std::string, int> file_line_map;
-    file_line_map *m_lineNumber;
-    int    userId;
 
     bool   use_ipv6;
 

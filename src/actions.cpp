@@ -32,6 +32,8 @@
 static const char* strIntCmd(CAction::T_IntCmdType type)
 {
     switch (type) {
+	case CAction::E_INTCMD_NEXTCALL:
+		return "next_call";
     case CAction::E_INTCMD_STOPCALL:
         return "stop_call";
     case CAction::E_INTCMD_STOP_ALL:

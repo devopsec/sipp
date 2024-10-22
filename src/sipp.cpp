@@ -118,6 +118,7 @@ struct sipp_option {
 #define SIPP_OPTION_LFOVERWRITE   37
 #define SIPP_OPTION_PLUGIN        38
 #define SIPP_OPTION_NEED_SCTP     39
+#define SIPP_OPTION_CHAR          40
 #define SIPP_HELP_TEXT_HEADER    255
 
 /* Put each option, its help text, and type in this table. */
@@ -233,7 +234,7 @@ struct sipp_option options_table[] = {
     {"", "Call behavior options:", SIPP_HELP_TEXT_HEADER, nullptr, 0},
     {"aa", "Enable automatic 200 OK answer for INFO, NOTIFY, OPTIONS and UPDATE.", SIPP_OPTION_SETFLAG, &auto_answer, 1},
     {"base_cseq", "Start value of [cseq] for each call.", SIPP_OPTION_CSEQ, nullptr, 1},
-    {"cid_str", "Call ID string (default %u-%p@%s).  %u=call_number, %s=ip_address, %p=process_number, %%=% (in any order).", SIPP_OPTION_STRING, &call_id_string, 1},
+    {"cid_str", "Call ID string (default %u-%p@%s).  %u=call_number, %s=ip_address, %p=process_number, %%=%, %f1=input field 1 (in any order).", SIPP_OPTION_STRING, &call_id_string, 1},
     {"d", "Controls the length of calls. More precisely, this controls the duration of 'pause' instructions in the scenario, if they do not have a 'milliseconds' section. Default value is 0 and default unit is milliseconds.", SIPP_OPTION_TIME_MS, &duration, 1},
     {"deadcall_wait", "How long the Call-ID and final status of calls should be kept to improve message and error logs (default unit is ms).", SIPP_OPTION_TIME_MS, &deadcall_wait, 1},
     {"auth_uri", "Force the value of the URI for authentication.\n"
@@ -268,6 +269,8 @@ struct sipp_option options_table[] = {
      "First line of this file say whether the data is to be read in sequence (SEQUENTIAL), random (RANDOM), or user (USER) order.\n"
      "Each line corresponds to one call and has one or more ';' delimited data fields. Those fields can be referred as [field0], [field1], ... in the xml scenario file.  Several CSV files can be used simultaneously (syntax: -inf f1.csv -inf f2.csv ...)", SIPP_OPTION_INPUT_FILE, nullptr, 1},
     {"infindex", "file field\nCreate an index of file using field.  For example -inf ../path/to/users.csv -infindex users.csv 0 creates an index on the first key.", SIPP_OPTION_INDEX_FILE, nullptr, 1 },
+	/* must be parsed in first pass otherwise dependent parsing code will use the wrong delimiter */
+	{"inflinesep", "file line separator\nThe character used as a line separator for the input file. The default is '\\n'", SIPP_OPTION_CHAR, &inFileLineSep, 0 },
     {"ip_field", "Set which field from the injection file contains the IP address from which the client will send its messages.\n"
      "If this option is omitted and the '-t ui' option is present, then field 0 is assumed.\n"
      "Use this option together with '-t ui'", SIPP_OPTION_INT, &peripfield, 1},
@@ -1500,6 +1503,26 @@ int main(int argc, char *argv[])
                 CHECK_PASS();
                 *((char**)option->data) = argv[argi];
                 break;
+			case SIPP_OPTION_CHAR:
+				REQUIRE_ARG();
+				CHECK_PASS();
+				if (strlen(argv[argi]) > 1) {
+					assert(argv[argi][0] == '\\');
+					switch (argv[argi][1]) {
+						case 'n':
+							*((char*)option->data) = '\n';
+							break;
+						case '0':
+							*((char*)option->data) = '\0';
+							break;
+						default:
+							*((char*)option->data) = argv[argi][1];
+							break;
+					}
+				} else {
+					*((char*)option->data) = argv[argi][0];
+				}
+				break;
             case SIPP_OPTION_ARGI:
                 REQUIRE_ARG();
                 CHECK_PASS();
